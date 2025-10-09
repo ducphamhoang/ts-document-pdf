@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: Document to PDF Conversion API
+  description: |
+    A simple and efficient API for converting office documents (DOCX, XLSX, PPTX) to PDF format.
+    The service accepts file uploads, converts them using LibreOffice, and returns temporary download links.
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server (placeholder)
+
+tags:
+  - name: conversion
+    description: Document conversion operations
+  - name: download
+    description: File download operations
+
+paths:
+  /api/v1/convert:
+    post:
+      tags:
+        - conversion
+      summary: Convert office document to PDF
+      description: |
+        Upload a DOCX, XLSX, or PPTX file to convert it to PDF format.
+        The conversion is synchronous - the response includes a download URL once conversion completes.
+
+        **Supported formats:**
+        - Microsoft Word (.docx)
+        - Microsoft Excel (.xlsx)
+        - Microsoft PowerPoint (.pptx)
+
+        **Limitations:**
+        - Maximum file size: 25MB
+        - Conversion timeout: 30 seconds (configurable)
+        - File retention: 1 hour after conversion
+      operationId: convertDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Office document to convert (DOCX, XLSX, or PPTX)
+            encoding:
+              file:
+                contentType: application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.openxmlformats-officedocument.presentationml.presentation
+      responses:
+        '200':
+          description: Document converted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionSuccessResponse'
+              example:
+                success: true
+                message: File converted successfully
+                downloadUrl: https://api.example.com/downloads/a1b2c3d4-e5f6-7890-1234-567890abcdef
+        '400':
+          description: Bad request - missing file or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFile:
+                  summary: File not provided
+                  value:
+                    success: false
+                    error:
+                      message: File is required in 'file' field
+                      type: ValidationError
+        '413':
+          description: Payload too large - file exceeds size limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: File size exceeds 25MB limit
+                  type: FileTooLargeError
+        '415':
+          description: Unsupported media type - invalid file format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: Unsupported file type. Supported formats: DOCX, XLSX, PPTX
+                  type: UnsupportedFileTypeError
+        '422':
+          description: Unprocessable entity - file is corrupted or conversion failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidSignature:
+                  summary: File signature mismatch
+                  value:
+                    success: false
+                    error:
+                      message: File content does not match declared type
+                      type: InvalidFileSignatureError
+                conversionFailed:
+                  summary: Conversion failed
+                  value:
+                    success: false
+                    error:
+                      message: Document conversion failed. The file may be corrupted or malformed
+                      type: ConversionFailedError
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: An unexpected error occurred
+                  type: InternalServerError
+        '504':
+          description: Gateway timeout - conversion took too long
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: Document conversion timed out. The file may be too complex
+                  type: ConversionTimeoutError
+
+  /downloads/{fileId}:
+    get:
+      tags:
+        - download
+      summary: Download converted PDF
+      description: |
+        Retrieve a converted PDF file using the download URL returned from the conversion endpoint.
+
+        **Important:**
+        - Files are retained for 1 hour after conversion (configurable)
+        - Attempting to download an expired file returns 404
+        - The fileId is a UUID (not the original filename) for security
+      operationId: downloadConvertedFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: Unique identifier for the converted file (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: a1b2c3d4-e5f6-7890-1234-567890abcdef
+      responses:
+        '200':
+          description: PDF file retrieved successfully
+          headers:
+            Content-Type:
+              description: MIME type of the PDF file
+              schema:
+                type: string
+                enum:
+                  - application/pdf
+            Content-Disposition:
+              description: Attachment header with original filename
+              schema:
+                type: string
+              example: 'attachment; filename="document.pdf"'
+            Content-Length:
+              description: Size of the PDF file in bytes
+              schema:
+                type: integer
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found - may have expired or never existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: File not found or has expired
+                  type: FileNotFoundError
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: An unexpected error occurred while retrieving the file
+                  type: InternalServerError
+
+components:
+  schemas:
+    ConversionSuccessResponse:
+      type: object
+      required:
+        - success
+        - message
+        - downloadUrl
+      properties:
+        success:
+          type: boolean
+          description: Indicates operation success
+          example: true
+        message:
+          type: string
+          description: Human-readable success message
+          example: File converted successfully
+        downloadUrl:
+          type: string
+          format: uri
+          description: URL to download the converted PDF file
+          example: https://api.example.com/downloads/a1b2c3d4-e5f6-7890-1234-567890abcdef
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          description: Indicates operation failure
+          example: false
+        error:
+          type: object
+          required:
+            - message
+            - type
+          properties:
+            message:
+              type: string
+              description: Human-readable error message
+              example: File size exceeds 25MB limit
+            type:
+              type: string
+              description: Error type for programmatic handling
+              enum:
+                - ValidationError
+                - UnsupportedFileTypeError
+                - FileTooLargeError
+                - InvalidFileSignatureError
+                - ConversionFailedError
+                - ConversionTimeoutError
+                - FileNotFoundError
+                - InternalServerError
+              example: FileTooLargeError
+
+  securitySchemes: {}
+
+security: []
