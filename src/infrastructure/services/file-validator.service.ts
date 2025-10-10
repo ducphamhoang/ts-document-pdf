@@ -11,9 +11,10 @@ import { IFileValidator } from '../../application/interfaces/file-validator.inte
 export class FileValidator implements IFileValidator {
   async validateFile(file: Express.Multer.File): Promise<void> {
     // Validate file size
-    if (file.size > config.files.maxFileSizeMB * 1024 * 1024) {
+    const maxSizeBytes = config.files.maxFileSizeMB * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
       throw new FileTooLargeError(
-        `File size ${file.size} bytes exceeds the maximum allowed size of ${config.files.maxFileSizeMB}MB`
+        `File size ${file.size} bytes exceeds the maximum allowed size of ${config.files.maxFileSizeMB}MB (${maxSizeBytes} bytes)`
       );
     }
 
@@ -34,7 +35,7 @@ export class FileValidator implements IFileValidator {
     const detectedType = await fileTypeFromBuffer(fileBuffer);
     
     if (!detectedType) {
-      throw new InvalidFileSignatureError('Could not detect file type from signature');
+      throw new InvalidFileSignatureError('Could not detect file type from signature. The file may be corrupted or in an unsupported format.');
     }
 
     // List of supported MIME types for office documents
@@ -48,8 +49,14 @@ export class FileValidator implements IFileValidator {
     ];
 
     if (!supportedMimeTypes.includes(detectedType.mime)) {
+      const supportedTypesList = [
+        'DOCX (.docx)', 'XLSX (.xlsx)', 'PPTX (.pptx)', 
+        'DOC (.doc)', 'XLS (.xls)', 'PPT (.ppt)'
+      ].join(', ');
+      
       throw new UnsupportedFileTypeError(
-        `Unsupported file type: ${detectedType.mime}. Supported types: DOCX, XLSX, PPTX, DOC, XLS, PPT`
+        `Unsupported file type: ${detectedType.mime}. File signature analysis detected type "${detectedType.mime}". ` +
+        `Supported types are: ${supportedTypesList}`
       );
     }
 
@@ -58,8 +65,11 @@ export class FileValidator implements IFileValidator {
     const fileExtension = '.' + file.originalname.split('.').pop()?.toLowerCase();
     
     if (!allowedExtensions.includes(fileExtension)) {
+      const supportedExtensions = allowedExtensions.join(', ');
+      
       throw new UnsupportedFileTypeError(
-        `Unsupported file extension: ${fileExtension}. Supported extensions: ${allowedExtensions.join(', ')}`
+        `Unsupported file extension: ${fileExtension}. ` +
+        `File extension does not match the allowed types: ${supportedExtensions}`
       );
     }
   }

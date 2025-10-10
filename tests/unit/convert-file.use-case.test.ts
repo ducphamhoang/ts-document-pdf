@@ -54,8 +54,7 @@ describe('ConvertFileUseCase', () => {
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
       
       // Mock the internal activePDFs map to return a record
-      (mockStorage as any).activePDFs = new Map();
-      (mockStorage as any).activePDFs.set('mock-uuid', {
+      mockStorage.getActivePDF.mockReturnValueOnce({
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',
         filename: 'converted_test.pdf',

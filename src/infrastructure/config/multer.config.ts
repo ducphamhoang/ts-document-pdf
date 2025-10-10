@@ -26,9 +26,11 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   if (allowedExtensions.includes(fileExtension)) {
     cb(null, true); // Accept the file
   } else {
-    cb(new UnsupportedFileTypeError(
-      `File type ${file.mimetype} is not supported. Supported types: DOC, DOCX, XLS, XLSX, PPT, PPTX`
-    ));
+    // Create our custom error for unsupported file types
+    const error = new UnsupportedFileTypeError(
+      `File type ${file.mimetype} with extension ${fileExtension} is not supported. Supported extensions: ${allowedExtensions.join(', ')}`
+    );
+    cb(error); // Pass error only (multer standard)
   }
 };
 
@@ -37,6 +39,9 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: config.files.maxFileSizeMB * 1024 * 1024, // Convert MB to bytes
+    // Also set parts and fields limits to prevent abuse
+    fields: 1,  // Only allow 1 field (the file field)
+    files: 1,   // Only allow 1 file
   },
   fileFilter: fileFilter
 });

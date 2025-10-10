@@ -8,6 +8,7 @@ import {
   ConversionTimeoutError,
   FileNotFoundError,
 } from '../../domain/errors';
+import logger from '../../infrastructure/logger/winston.logger';
 
 interface ErrorResponse {
   error: string;
@@ -27,7 +28,7 @@ export const errorMiddleware = (
   let message = 'Internal Server Error';
   let errorType = 'InternalServerError';
 
-  // Map domain errors to appropriate HTTP status codes
+  // Map domain errors to appropriate HTTP status codes and provide helpful messages
   if (error instanceof ValidationError) {
     status = 400;
     message = error.message;
@@ -57,10 +58,22 @@ export const errorMiddleware = (
     message = error.message;
     errorType = error.constructor.name;
   } else {
-    // Log unexpected errors
-    console.error(`Unexpected error: ${error.message}`, error);
+    // For non-domain errors, provide a generic message to avoid exposing internal details
+    status = 500;
+    message = 'An internal server error occurred. Please try again later.';
+    errorType = 'InternalServerError';
+    
+    // Log the full error details for debugging (only in server logs, not in response)
+    logger.error('Unhandled error occurred', {
+      error: error.message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+      url: req.url,
+    });
   }
 
+  // Create error response with consistent format
   const errorResponse: ErrorResponse = {
     error: errorType,
     message,
@@ -68,5 +81,18 @@ export const errorMiddleware = (
     path: req.path,
   };
 
+  // Log error details
+  logger.error('API Error Response', {
+    errorType,
+    message,
+    status,
+    path: req.path,
+    method: req.method,
+    originalUrl: req.originalUrl,
+    userAgent: req.get('User-Agent'),
+    requestId: res.get('X-Request-ID'),
+  });
+
+  // Send error response
   res.status(status).json(errorResponse);
 };
