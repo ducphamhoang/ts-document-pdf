@@ -12,14 +12,17 @@
     "^.+\\.(ts|tsx)$": [
       "ts-jest",
       {
-        "tsconfig": "tsconfig.json",
-        "useESM": true
+        "tsconfig": "tsconfig.json"
+      }
+    ],
+    "^.+\\.m?js$": [
+      "ts-jest",
+      {
+        "tsconfig": "tsconfig.json"
       }
     ]
   },
-  "transformIgnorePatterns": [
-    "/node_modules/(?!uuid|file-type)/.*"
-  ],
+  "transformIgnorePatterns": [],
   "collectCoverageFrom": [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts"

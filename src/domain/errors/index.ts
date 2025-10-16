@@ -47,3 +47,43 @@ export class FileNotFoundError extends DomainError {
     super(message);
   }
 }
+
+// Translation-specific errors
+export class TranslationError extends DomainError {
+  constructor(message: string = 'Translation failed') {
+    super(message);
+  }
+}
+
+export class InvalidLanguageError extends TranslationError {
+  constructor(message: string = 'Invalid language code provided') {
+    super(message);
+  }
+}
+
+export class TokenLimitExceededError extends TranslationError {
+  public readonly actualTokens?: number;
+  public readonly maxTokens?: number;
+
+  constructor(
+    message: string = 'Text content exceeds the 10,000 token limit',
+    actualTokens?: number,
+    maxTokens?: number
+  ) {
+    super(message);
+    this.actualTokens = actualTokens;
+    this.maxTokens = maxTokens;
+  }
+}
+
+export class TranslationServiceUnavailableError extends TranslationError {
+  constructor(message: string = 'Translation service is temporarily unavailable') {
+    super(message);
+  }
+}
+
+export class TranslationTimeoutError extends TranslationError {
+  constructor(message: string = 'Translation request timed out') {
+    super(message);
+  }
+}

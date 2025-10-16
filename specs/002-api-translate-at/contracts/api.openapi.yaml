@@ -1,0 +1,341 @@
+openapi: 3.0.3
+info:
+  title: Text Translation API
+  description: |
+    REST API for translating batches of text items using Google Gemini AI.
+    Preserves item IDs and position metadata through the translation process.
+  version: 1.0.0
+  contact:
+    name: Document to PDF Service
+    email: support@example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Translation
+    description: Text translation operations
+
+paths:
+  /translate:
+    post:
+      tags:
+        - Translation
+      summary: Translate batch of text items
+      description: |
+        Translates multiple text items from a source language to a target language
+        while preserving item IDs and position metadata. Uses Google Gemini AI for
+        accurate translations.
+
+        **Rate Limits**: 5 requests per minute (free tier), 1000 RPM (paid tier)
+        **Timeout**: 30 seconds maximum
+        **Token Limit**: 10,000 tokens per request
+      operationId: translateText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateRequest'
+            examples:
+              basicTranslation:
+                summary: Basic English to French translation
+                value:
+                  sourceLanguage: en
+                  targetLanguage: fr
+                  items:
+                    - id: item-1
+                      text: Hello, world!
+                      position:
+                        page: 1
+                        x: 100
+                        y: 200
+                    - id: item-2
+                      text: This is a test.
+                      position:
+                        page: 1
+                        x: 100
+                        y: 250
+              multipleLanguages:
+                summary: Spanish to German translation
+                value:
+                  sourceLanguage: es
+                  targetLanguage: de
+                  items:
+                    - id: doc-section-1
+                      text: Hola, ¿cómo estás?
+                      position:
+                        page: 1
+                        x: 50
+                        y: 100
+      responses:
+        '200':
+          description: Translation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateResponse'
+              examples:
+                successfulTranslation:
+                  summary: Successful translation response
+                  value:
+                    success: true
+                    message: Text translated successfully.
+                    data:
+                      - id: item-1
+                        text: Bonjour, le monde!
+                        position:
+                          page: 1
+                          x: 100
+                          y: 200
+                      - id: item-2
+                        text: Ceci est un test.
+                        position:
+                          page: 1
+                          x: 100
+                          y: 250
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidLanguage:
+                  summary: Invalid language code
+                  value:
+                    success: false
+                    message: Invalid language code provided.
+                    error:
+                      code: INVALID_LANGUAGE
+                      details:
+                        field: sourceLanguage
+                        value: xyz
+                emptyItems:
+                  summary: Empty items array
+                  value:
+                    success: false
+                    message: Items array cannot be empty.
+                    error:
+                      code: EMPTY_ITEMS
+                sameLanguage:
+                  summary: Source and target languages are the same
+                  value:
+                    success: false
+                    message: Source and target languages must be different.
+                    error:
+                      code: SAME_LANGUAGE
+        '413':
+          description: Payload too large - token limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tokenLimitExceeded:
+                  summary: Token limit exceeded
+                  value:
+                    success: false
+                    message: Text content exceeds the 10,000 token limit.
+                    error:
+                      code: TOKEN_LIMIT_EXCEEDED
+                      details:
+                        actualTokens: 12500
+                        maxTokens: 10000
+        '422':
+          description: Unprocessable entity - translation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                translationFailed:
+                  summary: Translation service error
+                  value:
+                    success: false
+                    message: Translation failed due to service error.
+                    error:
+                      code: TRANSLATION_FAILED
+        '503':
+          description: Service unavailable - translation service down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serviceUnavailable:
+                  summary: Translation service unavailable
+                  value:
+                    success: false
+                    message: Translation service is temporarily unavailable.
+                    error:
+                      code: TRANSLATION_SERVICE_UNAVAILABLE
+        '504':
+          description: Gateway timeout - request exceeded time limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                timeout:
+                  summary: Request timeout
+                  value:
+                    success: false
+                    message: Translation request timed out.
+                    error:
+                      code: TIMEOUT
+
+components:
+  schemas:
+    TranslateRequest:
+      type: object
+      required:
+        - sourceLanguage
+        - targetLanguage
+        - items
+      properties:
+        sourceLanguage:
+          type: string
+          description: ISO 639-1 language code for source text
+          pattern: '^[a-z]{2}$'
+          example: en
+        targetLanguage:
+          type: string
+          description: ISO 639-1 language code for target translation
+          pattern: '^[a-z]{2}$'
+          example: fr
+        items:
+          type: array
+          description: Array of text items to translate
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/TextItem'
+
+    TextItem:
+      type: object
+      required:
+        - id
+        - text
+        - position
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this text item
+          maxLength: 100
+          example: item-1
+        text:
+          type: string
+          description: Text content to translate
+          minLength: 1
+          maxLength: 50000
+          example: Hello, world!
+        position:
+          $ref: '#/components/schemas/Position'
+
+    Position:
+      type: object
+      required:
+        - page
+        - x
+        - y
+      properties:
+        page:
+          type: integer
+          description: Page number in source document
+          minimum: 1
+          example: 1
+        x:
+          type: number
+          description: Horizontal coordinate
+          minimum: 0
+          example: 100
+        y:
+          type: number
+          description: Vertical coordinate
+          minimum: 0
+          example: 200
+
+    TranslateResponse:
+      type: object
+      required:
+        - success
+        - message
+        - data
+      properties:
+        success:
+          type: boolean
+          description: Always true for successful responses
+          example: true
+        message:
+          type: string
+          description: Human-readable success message
+          example: Text translated successfully.
+        data:
+          type: array
+          description: Array of translated items
+          items:
+            $ref: '#/components/schemas/TranslatedItem'
+
+    TranslatedItem:
+      type: object
+      required:
+        - id
+        - text
+        - position
+      properties:
+        id:
+          type: string
+          description: Original item ID (preserved from request)
+          example: item-1
+        text:
+          type: string
+          description: Translated text content
+          example: Bonjour, le monde!
+        position:
+          $ref: '#/components/schemas/Position'
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Always false for error responses
+          example: false
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid language code provided.
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - INVALID_LANGUAGE
+            - EMPTY_ITEMS
+            - SAME_LANGUAGE
+            - TOKEN_LIMIT_EXCEEDED
+            - TRANSLATION_FAILED
+            - TRANSLATION_SERVICE_UNAVAILABLE
+            - TIMEOUT
+            - INVALID_REQUEST
+          example: INVALID_LANGUAGE
+        details:
+          type: object
+          description: Additional error-specific information
+          additionalProperties: true

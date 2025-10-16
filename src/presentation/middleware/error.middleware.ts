@@ -7,14 +7,21 @@ import {
   ConversionFailedError,
   ConversionTimeoutError,
   FileNotFoundError,
+  TranslationError,
+  InvalidLanguageError,
+  TokenLimitExceededError,
+  TranslationServiceUnavailableError,
+  TranslationTimeoutError,
 } from '../../domain/errors';
 import logger from '../../infrastructure/logger/winston.logger';
 
 interface ErrorResponse {
-  error: string;
+  success: boolean;
   message: string;
-  timestamp: string;
-  path: string;
+  error?: {
+    code: string;
+    details?: any;
+  };
 }
 
 export const errorMiddleware = (
@@ -26,43 +33,71 @@ export const errorMiddleware = (
 ): void => {
   let status = 500;
   let message = 'Internal Server Error';
-  let errorType = 'InternalServerError';
+  let errorCode = 'INTERNAL_SERVER_ERROR';
+  let errorDetails: any = undefined;
 
   // Map domain errors to appropriate HTTP status codes and provide helpful messages
-  if (error instanceof ValidationError) {
+  // Translation errors
+  if (error instanceof InvalidLanguageError) {
     status = 400;
     message = error.message;
-    errorType = 'ValidationError';
+    errorCode = 'INVALID_LANGUAGE';
+  } else if (error instanceof TokenLimitExceededError) {
+    status = 413;
+    message = error.message;
+    errorCode = 'TOKEN_LIMIT_EXCEEDED';
+    errorDetails = {
+      actualTokens: error.actualTokens,
+      maxTokens: error.maxTokens,
+    };
+  } else if (error instanceof TranslationServiceUnavailableError) {
+    status = 503;
+    message = error.message;
+    errorCode = 'TRANSLATION_SERVICE_UNAVAILABLE';
+  } else if (error instanceof TranslationTimeoutError) {
+    status = 504;
+    message = error.message;
+    errorCode = 'TIMEOUT';
+  } else if (error instanceof TranslationError) {
+    status = 422;
+    message = error.message;
+    errorCode = 'TRANSLATION_FAILED';
+  }
+  // File/conversion errors
+  else if (error instanceof ValidationError) {
+    status = 400;
+    message = error.message;
+    errorCode = 'VALIDATION_ERROR';
   } else if (error instanceof UnsupportedFileTypeError) {
     status = 415;
     message = error.message;
-    errorType = 'UnsupportedFileTypeError';
+    errorCode = 'UNSUPPORTED_FILE_TYPE';
   } else if (error instanceof FileTooLargeError) {
     status = 413;
     message = error.message;
-    errorType = 'FileTooLargeError';
+    errorCode = 'FILE_TOO_LARGE';
   } else if (error instanceof ConversionFailedError) {
     status = 422;
     message = error.message;
-    errorType = 'ConversionFailedError';
+    errorCode = 'CONVERSION_FAILED';
   } else if (error instanceof ConversionTimeoutError) {
     status = 504;
     message = error.message;
-    errorType = 'ConversionTimeoutError';
+    errorCode = 'CONVERSION_TIMEOUT';
   } else if (error instanceof FileNotFoundError) {
     status = 404;
     message = error.message;
-    errorType = 'FileNotFoundError';
+    errorCode = 'FILE_NOT_FOUND';
   } else if (error instanceof DomainError) {
     status = 422;
     message = error.message;
-    errorType = error.constructor.name;
+    errorCode = error.constructor.name.replace(/Error$/, '').toUpperCase();
   } else {
     // For non-domain errors, provide a generic message to avoid exposing internal details
     status = 500;
     message = 'An internal server error occurred. Please try again later.';
-    errorType = 'InternalServerError';
-    
+    errorCode = 'INTERNAL_SERVER_ERROR';
+
     // Log the full error details for debugging (only in server logs, not in response)
     logger.error('Unhandled error occurred', {
       error: error.message,
@@ -75,15 +110,17 @@ export const errorMiddleware = (
 
   // Create error response with consistent format
   const errorResponse: ErrorResponse = {
-    error: errorType,
+    success: false,
     message,
-    timestamp: new Date().toISOString(),
-    path: req.path,
+    error: {
+      code: errorCode,
+      ...(errorDetails && { details: errorDetails }),
+    },
   };
 
   // Log error details
   logger.error('API Error Response', {
-    errorType,
+    errorCode,
     message,
     status,
     path: req.path,
