@@ -32,7 +32,7 @@ Create or update your `.env` file in the project root:
 GEMINI_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-2.0-flash-001
 TRANSLATION_TIMEOUT_MS=30000
-GEMINI_RATE_LIMIT_RPM=5
+GEMINI_RATE_LIMIT_RPM=60
 
 # Server Configuration (existing)
 PORT=3000
@@ -331,19 +331,41 @@ async function translateWithRetry(
 
 ## Rate Limits
 
-### Free Tier (Google AI Studio)
+### API Server Rate Limits
+- **Default**: 60 requests per minute (configurable via `GEMINI_RATE_LIMIT_RPM`)
+- **429 Response**: Includes `RateLimit-*` headers with limit info
+- **Retry-After**: Check `error.details.retryAfter` for wait time
+
+### Google Gemini API Limits
+**Free Tier (Google AI Studio)**:
 - **5 requests per minute (RPM)**
 - **25 requests per day (RPD)**
 - **32,000 tokens per minute (TPM)**
 
-### Paid Tier (Gemini 1.5 Flash)
+**Paid Tier (Gemini 1.5 Flash)**:
 - **1,000 requests per minute (RPM)**
 - **Unlimited requests per day**
 - **Higher token limits**
 
 ### Handling Rate Limits
 
-When you hit rate limits, the API will return a 429 status code. Implement client-side rate limiting:
+When you hit rate limits, the API will return a 429 status code with rate limit headers:
+
+```json
+{
+  "success": false,
+  "message": "Too many translation requests from this IP, please try again later.",
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "details": {
+      "retryAfter": "1 minute",
+      "limit": 60
+    }
+  }
+}
+```
+
+Implement client-side rate limiting:
 
 ```typescript
 import pLimit from 'p-limit';
