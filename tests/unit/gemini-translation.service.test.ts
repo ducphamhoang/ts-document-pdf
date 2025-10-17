@@ -64,9 +64,7 @@ describe('GeminiTranslationService', () => {
         .mockResolvedValueOnce({ text: translations[2] });
 
       // Act
-      const results = await Promise.all(
-        texts.map(text => service.translateText(text, 'en', 'fr'))
-      );
+      const results = await Promise.all(texts.map(text => service.translateText(text, 'en', 'fr')));
 
       // Assert
       expect(results).toEqual(translations);
@@ -75,14 +73,10 @@ describe('GeminiTranslationService', () => {
 
     it('should handle Gemini API errors gracefully', async () => {
       // Arrange
-      mockGenAI.models.generateContent.mockRejectedValue(
-        new Error('API Error: Invalid request')
-      );
+      mockGenAI.models.generateContent.mockRejectedValue(new Error('API Error: Invalid request'));
 
       // Act & Assert
-      await expect(service.translateText('Hello', 'en', 'fr')).rejects.toThrow(
-        TranslationError
-      );
+      await expect(service.translateText('Hello', 'en', 'fr')).rejects.toThrow(TranslationError);
     });
 
     it('should retry on transient failures (429 rate limit)', async () => {
@@ -127,9 +121,7 @@ describe('GeminiTranslationService', () => {
       mockGenAI.models.generateContent.mockRejectedValue(badRequestError);
 
       // Act & Assert
-      await expect(service.translateText('Hello', 'en', 'fr')).rejects.toThrow(
-        TranslationError
-      );
+      await expect(service.translateText('Hello', 'en', 'fr')).rejects.toThrow(TranslationError);
       expect(mockGenAI.models.generateContent).toHaveBeenCalledTimes(1); // No retry
     });
 
@@ -166,9 +158,7 @@ describe('GeminiTranslationService', () => {
       mockGenAI.models.countTokens.mockRejectedValue(new Error('API Error'));
 
       // Act & Assert
-      await expect(
-        service.countTokens('Hello, world!')
-      ).rejects.toThrow(TranslationError);
+      await expect(service.countTokens('Hello, world!')).rejects.toThrow(TranslationError);
     });
   });
 });

@@ -103,9 +103,7 @@ describe('TranslateTextUseCase', () => {
       ];
 
       // Act & Assert
-      await expect(useCase.execute('en', 'en', items)).rejects.toThrow(
-        InvalidLanguageError
-      );
+      await expect(useCase.execute('en', 'en', items)).rejects.toThrow(InvalidLanguageError);
       await expect(useCase.execute('en', 'en', items)).rejects.toThrow(
         'Source and target languages must be different'
       );
@@ -113,9 +111,7 @@ describe('TranslateTextUseCase', () => {
 
     it('should validate that items array is not empty', async () => {
       // Act & Assert
-      await expect(useCase.execute('en', 'fr', [])).rejects.toThrow(
-        'Items array cannot be empty'
-      );
+      await expect(useCase.execute('en', 'fr', [])).rejects.toThrow('Items array cannot be empty');
     });
 
     it('should validate token limit (10,000 tokens)', async () => {
@@ -127,9 +123,7 @@ describe('TranslateTextUseCase', () => {
       mockTranslationService.countTokens.mockResolvedValue(10001); // Exceeds limit
 
       // Act & Assert
-      await expect(useCase.execute('en', 'fr', items)).rejects.toThrow(
-        TokenLimitExceededError
-      );
+      await expect(useCase.execute('en', 'fr', items)).rejects.toThrow(TokenLimitExceededError);
     });
 
     it('should accept requests with exactly 10,000 tokens', async () => {

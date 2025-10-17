@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TranslationController } from '../controllers/translation.controller';
 import { TranslateTextUseCase } from '../../application/use-cases/translate-text.use-case';
 import { GeminiTranslationService } from '../../infrastructure/services/gemini-translation.service';
+import { translationRateLimiter } from '../middleware/rate-limit.middleware';
 
 /**
  * Create and configure translation routes
@@ -15,8 +16,8 @@ export function createTranslationRoutes(): Router {
   const translateTextUseCase = new TranslateTextUseCase(translationService);
   const translationController = new TranslationController(translateTextUseCase);
 
-  // POST /api/v1/translate
-  router.post('/translate', translationController.translate);
+  // POST /api/v1/translate (with rate limiting)
+  router.post('/translate', translationRateLimiter, translationController.translate);
 
   return router;
 }

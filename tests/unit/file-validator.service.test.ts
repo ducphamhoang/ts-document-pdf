@@ -1,10 +1,10 @@
 import { FileValidator } from '../../src/infrastructure/services/file-validator.service';
 import { fileTypeFromBuffer } from 'file-type';
 import config from '../../src/infrastructure/config';
-import { 
-  UnsupportedFileTypeError, 
-  FileTooLargeError, 
-  InvalidFileSignatureError 
+import {
+  UnsupportedFileTypeError,
+  FileTooLargeError,
+  InvalidFileSignatureError,
 } from '../../src/domain/errors';
 
 // Mock dependencies
@@ -34,7 +34,10 @@ describe('FileValidator', () => {
 
   describe('validateFile', () => {
     it('should pass validation for a valid DOCX file', async () => {
-      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({ ext: 'docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({
+        ext: 'docx',
+        mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
 
       await expect(fileValidator.validateFile(mockFile)).resolves.not.toThrow();
     });
@@ -43,39 +46,39 @@ describe('FileValidator', () => {
       // Set file size to be larger than max allowed
       const largeFile = { ...mockFile, size: config.files.maxFileSizeMB * 1024 * 1024 + 1 };
 
-      await expect(fileValidator.validateFile(largeFile))
-        .rejects
-        .toThrow(FileTooLargeError);
+      await expect(fileValidator.validateFile(largeFile)).rejects.toThrow(FileTooLargeError);
     });
 
     it('should throw InvalidFileSignatureError when file type cannot be detected', async () => {
       (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce(null as any);
 
-      await expect(fileValidator.validateFile(mockFile))
-        .rejects
-        .toThrow(InvalidFileSignatureError);
+      await expect(fileValidator.validateFile(mockFile)).rejects.toThrow(InvalidFileSignatureError);
     });
 
     it('should throw UnsupportedFileTypeError for unsupported MIME types', async () => {
-      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({ ext: 'pdf', mime: 'application/pdf' });
+      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({
+        ext: 'pdf',
+        mime: 'application/pdf',
+      });
 
-      await expect(fileValidator.validateFile(mockFile))
-        .rejects
-        .toThrow(UnsupportedFileTypeError);
+      await expect(fileValidator.validateFile(mockFile)).rejects.toThrow(UnsupportedFileTypeError);
     });
 
     it('should throw UnsupportedFileTypeError for unsupported file extensions', async () => {
-      const unsupportedFile = { 
-        ...mockFile, 
+      const unsupportedFile = {
+        ...mockFile,
         originalname: 'test.pdf',
-        mimetype: 'application/pdf'
+        mimetype: 'application/pdf',
       };
-      
-      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({ ext: 'pdf', mime: 'application/pdf' });
 
-      await expect(fileValidator.validateFile(unsupportedFile))
-        .rejects
-        .toThrow(UnsupportedFileTypeError);
+      (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({
+        ext: 'pdf',
+        mime: 'application/pdf',
+      });
+
+      await expect(fileValidator.validateFile(unsupportedFile)).rejects.toThrow(
+        UnsupportedFileTypeError
+      );
     });
   });
 });

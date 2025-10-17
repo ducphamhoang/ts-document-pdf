@@ -18,9 +18,9 @@ export class ConversionController {
           success: false,
           error: {
             type: 'MissingFileError',
-            message: 'No file uploaded. Please include a file in the \'file\' field.',
+            message: "No file uploaded. Please include a file in the 'file' field.",
             timestamp: new Date().toISOString(),
-          }
+          },
         });
         return;
       }
@@ -37,7 +37,7 @@ export class ConversionController {
           filename: result.filename,
           sizeBytes: result.sizeBytes,
           expiresAt: result.expiresAt,
-        }
+        },
       };
 
       // Send success response
@@ -52,7 +52,7 @@ export class ConversionController {
   async downloadFile(req: Request, res: Response): Promise<void> {
     try {
       const { fileId } = req.params;
-      
+
       if (!fileId) {
         res.status(400).json({
           success: false,
@@ -60,7 +60,7 @@ export class ConversionController {
             type: 'MissingFileIdError',
             message: 'File ID is required to download the PDF.',
             timestamp: new Date().toISOString(),
-          }
+          },
         });
         return;
       }

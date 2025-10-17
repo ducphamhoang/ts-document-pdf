@@ -6,13 +6,13 @@ import { LibreOfficeConverter } from '../../src/infrastructure/services/libreoff
 import { ConversionQueueService } from '../../src/infrastructure/services/conversion-queue.service';
 import { FileCleanupService } from '../../src/infrastructure/services/file-cleanup.service';
 import { ConvertedPDF } from '../../src/domain/entities/converted-pdf.entity';
-import { 
-  UnsupportedFileTypeError, 
-  FileTooLargeError, 
+import {
+  UnsupportedFileTypeError,
+  FileTooLargeError,
   InvalidFileSignatureError,
   ConversionFailedError,
   ConversionTimeoutError,
-  FileNotFoundError
+  FileNotFoundError,
 } from '../../src/domain/errors';
 
 // Mock dependencies
@@ -53,21 +53,17 @@ describe('Error Handling Comprehensive Tests', () => {
     mockStorage = new (TempFileStorageService as any)();
     mockConverter = new (LibreOfficeConverter as any)();
     mockQueue = new (ConversionQueueService as any)();
-    
+
     // Mock the queue execute method to just call the passed function
     mockQueue.execute.mockImplementation(async (task: () => Promise<any>) => {
       return await task();
     });
-    
-    convertFileUseCase = new ConvertFileUseCase(
-      mockFileValidator,
-      mockStorage,
-      mockConverter
-    );
-    
+
+    convertFileUseCase = new ConvertFileUseCase(mockFileValidator, mockStorage, mockConverter);
+
     // Access the private queue property and replace it with our mock
     (convertFileUseCase as any).conversionQueue = mockQueue;
-    
+
     downloadFileUseCase = new DownloadFileUseCase(mockStorage);
     cleanupService = new FileCleanupService(mockStorage);
   });
@@ -77,45 +73,35 @@ describe('Error Handling Comprehensive Tests', () => {
       const error = new UnsupportedFileTypeError('File type not supported');
       mockFileValidator.validateFile.mockRejectedValueOnce(error);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(UnsupportedFileTypeError);
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('File type not supported');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(UnsupportedFileTypeError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('File type not supported');
     });
 
     it('should properly propagate FileTooLargeError', async () => {
       const error = new FileTooLargeError('File exceeds maximum size');
       mockFileValidator.validateFile.mockRejectedValueOnce(error);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(FileTooLargeError);
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('File exceeds maximum size');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(FileTooLargeError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'File exceeds maximum size'
+      );
     });
 
     it('should properly propagate InvalidFileSignatureError', async () => {
       const error = new InvalidFileSignatureError('Invalid file signature');
       mockFileValidator.validateFile.mockRejectedValueOnce(error);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(InvalidFileSignatureError);
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Invalid file signature');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(InvalidFileSignatureError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Invalid file signature');
     });
 
     it('should handle generic validation errors', async () => {
       const error = new Error('Generic validation error');
       mockFileValidator.validateFile.mockRejectedValueOnce(error);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Generic validation error');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Generic validation error'
+      );
     });
   });
 
@@ -125,9 +111,9 @@ describe('Error Handling Comprehensive Tests', () => {
       const creationError = new Error('Failed to create temp directory');
       mockStorage.createTempDirectory.mockRejectedValueOnce(creationError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Failed to create temp directory');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Failed to create temp directory'
+      );
     });
 
     it('should handle PDF save errors', async () => {
@@ -137,18 +123,14 @@ describe('Error Handling Comprehensive Tests', () => {
       const saveError = new Error('Failed to save PDF');
       mockStorage.savePDF.mockRejectedValueOnce(saveError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Failed to save PDF');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Failed to save PDF');
     });
 
     it('should handle PDF get errors in download use case', async () => {
       const getError = new Error('Failed to get PDF');
       mockStorage.getPDF.mockRejectedValueOnce(getError);
 
-      await expect(downloadFileUseCase.execute('test-id'))
-        .rejects
-        .toThrow('Failed to get PDF');
+      await expect(downloadFileUseCase.execute('test-id')).rejects.toThrow('Failed to get PDF');
     });
 
     it('should handle missing PDF record in download use case', async () => {
@@ -159,12 +141,12 @@ describe('Error Handling Comprehensive Tests', () => {
       });
       jest.spyOn(mockStorage, 'getActivePDF').mockReturnValue(null as any); // Return null for missing record
 
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow('PDF record with ID non-existent-id not found');
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        FileNotFoundError
+      );
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        'PDF record with ID non-existent-id not found'
+      );
     });
   });
 
@@ -175,12 +157,8 @@ describe('Error Handling Comprehensive Tests', () => {
       const conversionError = new ConversionFailedError('Conversion failed');
       mockConverter.convert.mockRejectedValueOnce(conversionError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(ConversionFailedError);
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Conversion failed');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(ConversionFailedError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Conversion failed');
     });
 
     it('should properly handle conversion timeout errors', async () => {
@@ -189,12 +167,8 @@ describe('Error Handling Comprehensive Tests', () => {
       const timeoutError = new ConversionTimeoutError('Conversion timed out');
       mockConverter.convert.mockRejectedValueOnce(timeoutError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(ConversionTimeoutError);
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Conversion timed out');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(ConversionTimeoutError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Conversion timed out');
     });
 
     it('should handle generic converter errors', async () => {
@@ -203,9 +177,9 @@ describe('Error Handling Comprehensive Tests', () => {
       const genericError = new Error('Converter error occurred');
       mockConverter.convert.mockRejectedValueOnce(genericError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Converter error occurred');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Converter error occurred'
+      );
     });
   });
 
@@ -213,27 +187,25 @@ describe('Error Handling Comprehensive Tests', () => {
     it('should propagate errors from the queue execution', async () => {
       mockFileValidator.validateFile.mockResolvedValueOnce();
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Make the queue execution fail
       const queueError = new Error('Queue execution failed');
       mockQueue.execute.mockRejectedValueOnce(queueError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Queue execution failed');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Queue execution failed');
     });
 
     it('should handle queue timeouts', async () => {
       mockFileValidator.validateFile.mockResolvedValueOnce();
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Make the queue execution timeout
       const timeoutError = new Error('Queue operation timed out');
       mockQueue.execute.mockRejectedValueOnce(timeoutError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Queue operation timed out');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Queue operation timed out'
+      );
     });
   });
 
@@ -241,31 +213,29 @@ describe('Error Handling Comprehensive Tests', () => {
     it('should throw FileNotFoundError for missing files', async () => {
       mockStorage.getPDF.mockResolvedValueOnce(null);
 
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow('PDF with ID non-existent-id not found');
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        FileNotFoundError
+      );
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        'PDF with ID non-existent-id not found'
+      );
     });
 
     it('should throw FileNotFoundError for expired files', async () => {
       const expiredError = new FileNotFoundError('Converted PDF with ID expired-id has expired');
       mockStorage.getPDF.mockRejectedValueOnce(expiredError);
 
-      await expect(downloadFileUseCase.execute('expired-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
-      await expect(downloadFileUseCase.execute('expired-id'))
-        .rejects
-        .toThrow('Converted PDF with ID expired-id has expired');
+      await expect(downloadFileUseCase.execute('expired-id')).rejects.toThrow(FileNotFoundError);
+      await expect(downloadFileUseCase.execute('expired-id')).rejects.toThrow(
+        'Converted PDF with ID expired-id has expired'
+      );
     });
 
     it('should handle file read errors during download', async () => {
       // Mock fs.readFile to throw an error
       const fs = require('fs/promises');
       jest.spyOn(fs, 'readFile').mockRejectedValueOnce(new Error('Cannot read file'));
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -282,9 +252,9 @@ describe('Error Handling Comprehensive Tests', () => {
         downloadCount: 0,
       });
 
-      await expect(downloadFileUseCase.execute('read-error-id'))
-        .rejects
-        .toThrow('Cannot read file');
+      await expect(downloadFileUseCase.execute('read-error-id')).rejects.toThrow(
+        'Cannot read file'
+      );
     });
   });
 
@@ -293,9 +263,7 @@ describe('Error Handling Comprehensive Tests', () => {
       const cleanupError = new Error('Storage cleanup failed');
       mockStorage.cleanup.mockRejectedValueOnce(cleanupError);
 
-      await expect(cleanupService.cleanup())
-        .rejects
-        .toThrow('Storage cleanup failed');
+      await expect(cleanupService.cleanup()).rejects.toThrow('Storage cleanup failed');
     });
 
     it('should handle file system errors in temp directory cleanup', async () => {
@@ -309,15 +277,17 @@ describe('Error Handling Comprehensive Tests', () => {
 
       // Need to import after mocking
       const originalModule = await import('../../src/infrastructure/services/file-cleanup.service');
-      const mockedModule = jest.requireMock('../../src/infrastructure/services/file-cleanup.service');
+      const mockedModule = jest.requireMock(
+        '../../src/infrastructure/services/file-cleanup.service'
+      );
       const { FileCleanupService: MockedCleanupService } = mockedModule;
-      
+
       const mockStorageForCleanup = new (TempFileStorageService as any)();
       const cleanupServiceForTest = new MockedCleanupService(mockStorageForCleanup);
 
-      await expect(cleanupServiceForTest.cleanupStaleTempDirectories())
-        .rejects
-        .toThrow('Cannot read directory');
+      await expect(cleanupServiceForTest.cleanupStaleTempDirectories()).rejects.toThrow(
+        'Cannot read directory'
+      );
     });
   });
 
@@ -326,10 +296,8 @@ describe('Error Handling Comprehensive Tests', () => {
       // First request fails validation
       const validationError = new UnsupportedFileTypeError('Invalid file type');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
-      
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Invalid file type');
+
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Invalid file type');
 
       // Second request succeeds validation but fails conversion
       mockFileValidator.validateFile.mockResolvedValueOnce();
@@ -337,9 +305,7 @@ describe('Error Handling Comprehensive Tests', () => {
       const conversionError = new Error('Conversion failed');
       mockConverter.convert.mockRejectedValueOnce(conversionError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Conversion failed');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Conversion failed');
     });
 
     it('should handle errors without affecting other operations', async () => {
@@ -348,7 +314,7 @@ describe('Error Handling Comprehensive Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_successful.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_successful.pdf');
-      
+
       const mockSuccessfulPDF: ConvertedPDF = {
         id: 'successful-id',
         originalDocumentId: 'original-doc-id',
@@ -360,21 +326,21 @@ describe('Error Handling Comprehensive Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(mockSuccessfulPDF);
-      
+
       // First request succeeds
       const conversionResult = await convertFileUseCase.execute(mockFile);
       expect(conversionResult.id).toBe('successful-id');
-      
+
       // Second request fails validation
       const validationError = new UnsupportedFileTypeError('Invalid file type');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
-      
-      await expect(convertFileUseCase.execute({ ...mockFile, originalname: 'invalid.txt' }))
-        .rejects
-        .toThrow('Invalid file type');
-      
+
+      await expect(
+        convertFileUseCase.execute({ ...mockFile, originalname: 'invalid.txt' })
+      ).rejects.toThrow('Invalid file type');
+
       // The successful conversion should still be available for download
       const downloadResult = await downloadFileUseCase.execute('successful-id');
       expect(downloadResult.pdfRecord.id).toBe('successful-id');
@@ -386,7 +352,7 @@ describe('Error Handling Comprehensive Tests', () => {
       mockFileValidator.validateFile.mockResolvedValueOnce();
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const saveError = new Error('Storage save failed');
       mockStorage.savePDF.mockRejectedValueOnce(saveError);
 
@@ -408,9 +374,9 @@ describe('Error Handling Comprehensive Tests', () => {
       const thirdPartyError = new Error('Third-party library error');
       mockFileValidator.validateFile.mockRejectedValueOnce(thirdPartyError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Third-party library error');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Third-party library error'
+      );
     });
   });
 
@@ -418,16 +384,16 @@ describe('Error Handling Comprehensive Tests', () => {
     it('should properly handle cleanup when conversion fails', async () => {
       mockFileValidator.validateFile.mockResolvedValueOnce();
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Make conversion fail after temp directory was created
       const conversionError = new Error('Conversion failed after temp directory created');
       mockConverter.convert.mockRejectedValueOnce(conversionError);
 
       // The service should handle the cleanup of the temp directory
       // even if the main operation fails
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Conversion failed after temp directory created');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(
+        'Conversion failed after temp directory created'
+      );
     });
   });
 });

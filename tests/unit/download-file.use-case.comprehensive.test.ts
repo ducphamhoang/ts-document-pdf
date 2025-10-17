@@ -73,18 +73,18 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
       // Mock storage to return null when PDF doesn't exist
       mockStorage.getPDF.mockResolvedValueOnce(null);
 
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        FileNotFoundError
+      );
     });
 
     it('should throw FileNotFoundError with specific message for missing PDF', async () => {
       // Mock storage to return null when PDF doesn't exist
       mockStorage.getPDF.mockResolvedValueOnce(null);
 
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow('PDF with ID non-existent-id not found');
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        'PDF with ID non-existent-id not found'
+      );
     });
 
     it('should throw FileNotFoundError when PDF record does not exist in storage', async () => {
@@ -95,9 +95,9 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
       });
       jest.spyOn(mockStorage, 'getActivePDF').mockReturnValue(null as any); // Return null for missing record
 
-      await expect(downloadFileUseCase.execute('non-existent-record-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
+      await expect(downloadFileUseCase.execute('non-existent-record-id')).rejects.toThrow(
+        FileNotFoundError
+      );
     });
 
     it('should throw FileNotFoundError with specific message when PDF record does not exist', async () => {
@@ -108,9 +108,9 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
       });
       jest.spyOn(mockStorage, 'getActivePDF').mockReturnValue(null as any); // Return null for missing record
 
-      await expect(downloadFileUseCase.execute('non-existent-record-id'))
-        .rejects
-        .toThrow('PDF record with ID non-existent-record-id not found');
+      await expect(downloadFileUseCase.execute('non-existent-record-id')).rejects.toThrow(
+        'PDF record with ID non-existent-record-id not found'
+      );
     });
   });
 
@@ -122,25 +122,27 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
       };
 
       // Mock storage to throw FileNotFoundError for expired files
-      mockStorage.getPDF.mockRejectedValueOnce(new FileNotFoundError(`Converted PDF with ID test-pdf-id has expired`));
+      mockStorage.getPDF.mockRejectedValueOnce(
+        new FileNotFoundError(`Converted PDF with ID test-pdf-id has expired`)
+      );
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: Buffer.from('mock pdf content'),
       });
       mockStorage.getActivePDF.mockReturnValueOnce(expiredPDF);
 
-      await expect(downloadFileUseCase.execute('test-pdf-id'))
-        .rejects
-        .toThrow(FileNotFoundError);
+      await expect(downloadFileUseCase.execute('test-pdf-id')).rejects.toThrow(FileNotFoundError);
     });
 
     it('should throw FileNotFoundError with expired message', async () => {
       // Mock storage to throw FileNotFoundError for expired files
-      mockStorage.getPDF.mockRejectedValueOnce(new FileNotFoundError(`Converted PDF with ID expired-pdf-id has expired`));
+      mockStorage.getPDF.mockRejectedValueOnce(
+        new FileNotFoundError(`Converted PDF with ID expired-pdf-id has expired`)
+      );
 
-      await expect(downloadFileUseCase.execute('expired-pdf-id'))
-        .rejects
-        .toThrow('Converted PDF with ID expired-pdf-id has expired');
+      await expect(downloadFileUseCase.execute('expired-pdf-id')).rejects.toThrow(
+        'Converted PDF with ID expired-pdf-id has expired'
+      );
     });
   });
 
@@ -149,28 +151,26 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
       const storageError = new Error('Storage service error');
       mockStorage.getPDF.mockRejectedValueOnce(storageError);
 
-      await expect(downloadFileUseCase.execute('test-pdf-id'))
-        .rejects
-        .toThrow('Storage service error');
+      await expect(downloadFileUseCase.execute('test-pdf-id')).rejects.toThrow(
+        'Storage service error'
+      );
     });
 
     it('should handle file read errors', async () => {
       const fileReadError = new Error('Cannot read file');
       mockStorage.getPDF.mockRejectedValueOnce(fileReadError);
 
-      await expect(downloadFileUseCase.execute('test-pdf-id'))
-        .rejects
-        .toThrow('Cannot read file');
+      await expect(downloadFileUseCase.execute('test-pdf-id')).rejects.toThrow('Cannot read file');
     });
   });
 
   describe('Edge cases', () => {
     it('should handle PDF with zero download count', async () => {
-      const pdfWithZeroDownloads = { 
-        ...mockPDFRecord, 
-        downloadCount: 0 
+      const pdfWithZeroDownloads = {
+        ...mockPDFRecord,
+        downloadCount: 0,
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -188,11 +188,11 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
 
     it('should handle large PDF files', async () => {
       const largePDFBuffer = Buffer.alloc(10 * 1024 * 1024); // 10MB buffer
-      const largePDFRecord = { 
-        ...mockPDFRecord, 
-        sizeBytes: largePDFBuffer.length 
+      const largePDFRecord = {
+        ...mockPDFRecord,
+        sizeBytes: largePDFBuffer.length,
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/large_file.pdf',
         buffer: largePDFBuffer,
@@ -210,11 +210,11 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
     });
 
     it('should handle PDF with special characters in filename', async () => {
-      const specialCharPDF = { 
-        ...mockPDFRecord, 
-        filename: 'file_with_special_chars (2023).pdf' 
+      const specialCharPDF = {
+        ...mockPDFRecord,
+        filename: 'file_with_special_chars (2023).pdf',
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/file_with_special_chars (2023).pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -232,12 +232,12 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
     });
 
     it('should handle very old PDF files (not expired)', async () => {
-      const oldPDF = { 
-        ...mockPDFRecord, 
+      const oldPDF = {
+        ...mockPDFRecord,
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 23), // 23 hours ago
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 1) // 1 hour from now (expires soon)
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 1), // 1 hour from now (expires soon)
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/old_file.pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -258,11 +258,11 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
   describe('Download count tracking', () => {
     it('should increment download count correctly', async () => {
       const initialCount = 42;
-      const pdfWithCount = { 
-        ...mockPDFRecord, 
-        downloadCount: initialCount 
+      const pdfWithCount = {
+        ...mockPDFRecord,
+        downloadCount: initialCount,
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -275,11 +275,11 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
     });
 
     it('should maintain download count across multiple downloads', async () => {
-      const pdfWithCount = { 
-        ...mockPDFRecord, 
-        downloadCount: 3 
+      const pdfWithCount = {
+        ...mockPDFRecord,
+        downloadCount: 3,
       };
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: Buffer.from('mock pdf content'),
@@ -295,7 +295,7 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
   describe('File path handling', () => {
     it('should return the correct file path', async () => {
       const expectedPath = '/tmp/unique_converted_file.pdf';
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: expectedPath,
         buffer: Buffer.from('mock pdf content'),
@@ -309,7 +309,7 @@ describe('DownloadFileUseCase Comprehensive Tests', () => {
 
     it('should return the correct file buffer', async () => {
       const expectedBuffer = Buffer.from('this is the pdf content');
-      
+
       mockStorage.getPDF.mockResolvedValueOnce({
         path: '/tmp/converted_test.pdf',
         buffer: expectedBuffer,

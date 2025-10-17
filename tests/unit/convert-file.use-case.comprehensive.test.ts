@@ -44,18 +44,14 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     mockStorage = new (TempFileStorageService as any)();
     mockConverter = new (LibreOfficeConverter as any)();
     mockQueue = new (ConversionQueueService as any)();
-    
+
     // Mock the queue execute method to just call the passed function
     mockQueue.execute.mockImplementation(async (task: () => Promise<any>) => {
       return await task();
     });
-    
-    convertFileUseCase = new ConvertFileUseCase(
-      mockFileValidator,
-      mockStorage,
-      mockConverter
-    );
-    
+
+    convertFileUseCase = new ConvertFileUseCase(mockFileValidator, mockStorage, mockConverter);
+
     // Access the private queue property and replace it with our mock
     (convertFileUseCase as any).conversionQueue = mockQueue;
   });
@@ -64,16 +60,16 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should successfully convert a valid DOCX file', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to return a converted file path
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock storage to save PDF
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock the internal activePDFs map to return a record
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
@@ -107,21 +103,21 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
         ...mockFile,
         originalname: 'test.xlsx',
         mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        filename: 'test.xlsx'
+        filename: 'test.xlsx',
       };
 
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to return a converted file path
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock storage to save PDF
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock the internal activePDFs map to return a record
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
@@ -150,21 +146,21 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
         ...mockFile,
         originalname: 'test.pptx',
         mimetype: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        filename: 'test.pptx'
+        filename: 'test.pptx',
       };
 
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to return a converted file path
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock storage to save PDF
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock the internal activePDFs map to return a record
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
@@ -194,18 +190,14 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
       const validationError = new Error('Invalid file type');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(validationError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(validationError);
     });
 
     it('should handle validation errors with specific error types', async () => {
       const validationError = new Error('File too large');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('File too large');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('File too large');
     });
   });
 
@@ -213,33 +205,29 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should throw an error when temp directory creation fails', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock directory creation to fail
       const dirError = new Error('Failed to create directory');
       mockStorage.createTempDirectory.mockRejectedValueOnce(dirError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(dirError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(dirError);
     });
 
     it('should throw an error when PDF saving fails', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to return a converted file path
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock storage to fail saving PDF
       const saveError = new Error('Failed to save PDF');
       mockStorage.savePDF.mockRejectedValueOnce(saveError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(saveError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(saveError);
     });
   });
 
@@ -247,33 +235,29 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should throw an error when conversion fails', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to fail
       const conversionError = new Error('Conversion failed');
       mockConverter.convert.mockRejectedValueOnce(conversionError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(conversionError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(conversionError);
     });
 
     it('should handle timeout errors during conversion', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to timeout
       const timeoutError = new Error('Conversion timed out');
       mockConverter.convert.mockRejectedValueOnce(timeoutError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(timeoutError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(timeoutError);
     });
   });
 
@@ -283,11 +267,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
 
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',
@@ -312,11 +296,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
 
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',
@@ -341,11 +325,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
 
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',
@@ -371,11 +355,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should use the conversion queue for processing', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',
@@ -397,13 +381,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should throw error from queue if conversion fails in queue', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       // Make the queue execution fail
       mockQueue.execute.mockRejectedValueOnce(new Error('Queue processing failed'));
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Queue processing failed');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Queue processing failed');
     });
   });
 
@@ -411,11 +393,11 @@ describe('ConvertFileUseCase Comprehensive Tests', () => {
     it('should use UUID v4 for document ID', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce();
-      
+
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'mock-uuid',
         originalDocumentId: 'mock-uuid',

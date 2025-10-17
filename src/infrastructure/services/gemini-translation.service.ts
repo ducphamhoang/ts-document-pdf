@@ -142,7 +142,9 @@ Translation:`;
     // Create timeout promise
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new TranslationTimeoutError(`Translation request timed out after ${this.timeout}ms`));
+        reject(
+          new TranslationTimeoutError(`Translation request timed out after ${this.timeout}ms`)
+        );
       }, this.timeout);
     });
 

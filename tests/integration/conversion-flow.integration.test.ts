@@ -49,21 +49,17 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
     mockConverter = new (LibreOfficeConverter as any)();
     mockQueue = new (ConversionQueueService as any)();
     mockCleanup = new (FileCleanupService as any)();
-    
+
     // Mock the queue execute method to just call the passed function
     mockQueue.execute.mockImplementation(async (task: () => Promise<any>) => {
       return await task();
     });
-    
-    convertFileUseCase = new ConvertFileUseCase(
-      mockFileValidator,
-      mockStorage,
-      mockConverter
-    );
-    
+
+    convertFileUseCase = new ConvertFileUseCase(mockFileValidator, mockStorage, mockConverter);
+
     // Access the private queue property and replace it with our mock
     (convertFileUseCase as any).conversionQueue = mockQueue;
-    
+
     downloadFileUseCase = new DownloadFileUseCase(mockStorage);
     cleanupService = new FileCleanupService(mockStorage);
   });
@@ -75,7 +71,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'test-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -87,20 +83,20 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 hours from now
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(mockConvertedPDF);
-      
+
       // Step 1: Convert the file
       const conversionResult = await convertFileUseCase.execute(mockFile);
-      
+
       expect(conversionResult.id).toBe('test-pdf-id');
       expect(conversionResult.filename).toBe('converted_test.pdf');
       expect(conversionResult.sizeBytes).toBe(2048);
       expect(conversionResult.downloadUrl).toBe('http://localhost:3000/downloads/test-pdf-id');
-      
+
       // Step 2: Download the converted file
       const downloadResult = await downloadFileUseCase.execute('test-pdf-id');
-      
+
       expect(downloadResult.pdfRecord.id).toBe('test-pdf-id');
       expect(downloadResult.filePath).toBe('/tmp/converted_test.pdf');
       expect(downloadResult.fileBuffer).toEqual(Buffer.from('mock pdf content'));
@@ -113,7 +109,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_first.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_first.pdf');
-      
+
       const mockFirstPDF: ConvertedPDF = {
         id: 'first-pdf-id',
         originalDocumentId: 'first-doc-id',
@@ -125,14 +121,14 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 hours from now
         downloadCount: 0,
       };
-      
+
       // Second file conversion
       const secondFile = { ...mockFile, originalname: 'second.docx', filename: 'second.docx' };
       mockFileValidator.validateFile.mockResolvedValueOnce();
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-67890');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_second.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_second.pdf');
-      
+
       const mockSecondPDF: ConvertedPDF = {
         id: 'second-pdf-id',
         originalDocumentId: 'second-doc-id',
@@ -144,22 +140,21 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 hours from now
         downloadCount: 0,
       };
-      
-      mockStorage.getActivePDF.mockReturnValueOnce(mockFirstPDF)
-        .mockReturnValueOnce(mockSecondPDF);
-      
+
+      mockStorage.getActivePDF.mockReturnValueOnce(mockFirstPDF).mockReturnValueOnce(mockSecondPDF);
+
       // Convert first file
       const firstConversionResult = await convertFileUseCase.execute(mockFile);
       expect(firstConversionResult.id).toBe('first-pdf-id');
-      
+
       // Convert second file
       const secondConversionResult = await convertFileUseCase.execute(secondFile);
       expect(secondConversionResult.id).toBe('second-pdf-id');
-      
+
       // Download both files
       const firstDownloadResult = await downloadFileUseCase.execute('first-pdf-id');
       const secondDownloadResult = await downloadFileUseCase.execute('second-pdf-id');
-      
+
       expect(firstDownloadResult.pdfRecord.downloadCount).toBe(1);
       expect(secondDownloadResult.pdfRecord.downloadCount).toBe(1);
       expect(firstDownloadResult.fileBuffer).toEqual(Buffer.from('mock pdf content'));
@@ -173,7 +168,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'test-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -185,11 +180,11 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(mockConvertedPDF);
-      
+
       const result = await convertFileUseCase.execute(mockFile);
-      
+
       expect(mockQueue.execute).toHaveBeenCalled();
       expect(result.id).toBe('test-pdf-id');
     });
@@ -198,23 +193,23 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       // Mock config to set max concurrent conversions to 2
       const originalMaxConcurrent = (config as any).conversion.maxConcurrentConversions;
       (config as any).conversion.maxConcurrentConversions = 2;
-      
+
       try {
         // Create a new queue service instance with the updated config
         const queueService = new (ConversionQueueService as any)();
         queueService.execute = jest.fn().mockImplementation(async (task: () => Promise<any>) => {
           return await task();
         });
-        
+
         // Replace the queue in the use case
         (convertFileUseCase as any).conversionQueue = queueService;
-        
+
         // Mock file validation and other services
         mockFileValidator.validateFile.mockResolvedValue();
         mockStorage.createTempDirectory.mockResolvedValue('/tmp/convert-12345');
         mockConverter.convert.mockResolvedValue('/tmp/converted_test.pdf');
         mockStorage.savePDF.mockResolvedValue('/tmp/converted_test.pdf');
-        
+
         const mockConvertedPDF: ConvertedPDF = {
           id: 'test-pdf-id',
           originalDocumentId: 'original-doc-id',
@@ -226,13 +221,15 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
           expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
           downloadCount: 0,
         };
-        
+
         mockStorage.getActivePDF.mockReturnValueOnce(mockConvertedPDF);
-        
+
         // Execute multiple conversions concurrently
-        const promises = Array(3).fill(0).map(() => convertFileUseCase.execute(mockFile));
+        const promises = Array(3)
+          .fill(0)
+          .map(() => convertFileUseCase.execute(mockFile));
         const results = await Promise.all(promises);
-        
+
         // All should complete successfully
         expect(results.length).toBe(3);
         expect(queueService.execute).toHaveBeenCalledTimes(3);
@@ -248,10 +245,8 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       const validationError = new Error('Invalid file type');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Invalid file type');
-      
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Invalid file type');
+
       // Conversion should not proceed if validation fails
       expect(mockStorage.createTempDirectory).not.toHaveBeenCalled();
       expect(mockConverter.convert).not.toHaveBeenCalled();
@@ -263,7 +258,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'test-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -275,17 +270,17 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(mockConvertedPDF);
-      
+
       // Convert the valid file
       const conversionResult = await convertFileUseCase.execute(mockFile);
       expect(conversionResult.id).toBe('test-pdf-id');
-      
+
       // Now try to download a non-existent file
-      await expect(downloadFileUseCase.execute('non-existent-id'))
-        .rejects
-        .toThrow('PDF with ID non-existent-id not found');
+      await expect(downloadFileUseCase.execute('non-existent-id')).rejects.toThrow(
+        'PDF with ID non-existent-id not found'
+      );
     });
   });
 
@@ -293,9 +288,9 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
     it('should clean up expired files through the cleanup service', async () => {
       // Mock cleanup service to verify it's called
       mockCleanup.cleanup = jest.fn().mockResolvedValue(undefined);
-      
+
       await mockCleanup.cleanup();
-      
+
       expect(mockCleanup.cleanup).toHaveBeenCalled();
     });
 
@@ -305,7 +300,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const expiredPDF: ConvertedPDF = {
         id: 'expired-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -317,17 +312,17 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() - 1000 * 60 * 5), // Expired 5 minutes ago
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(expiredPDF);
-      
+
       // Convert the file (this doesn't consider expiration)
       const conversionResult = await convertFileUseCase.execute(mockFile);
       expect(conversionResult.id).toBeDefined();
-      
+
       // Try to download the file - this should fail because it's expired
-      await expect(downloadFileUseCase.execute('expired-pdf-id'))
-        .rejects
-        .toThrow('Converted PDF with ID expired-pdf-id has expired');
+      await expect(downloadFileUseCase.execute('expired-pdf-id')).rejects.toThrow(
+        'Converted PDF with ID expired-pdf-id has expired'
+      );
     });
 
     it('should allow download of non-expired files', async () => {
@@ -336,7 +331,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const validPDF: ConvertedPDF = {
         id: 'valid-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -348,13 +343,13 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 23), // Expires in 23 hours
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(validPDF);
-      
+
       // Convert the file
       const conversionResult = await convertFileUseCase.execute(mockFile);
       expect(conversionResult.id).toBe('valid-pdf-id');
-      
+
       // Download should succeed
       const downloadResult = await downloadFileUseCase.execute('valid-pdf-id');
       expect(downloadResult.pdfRecord.id).toBe('valid-pdf-id');
@@ -370,9 +365,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       const conversionError = new Error('Conversion failed');
       mockConverter.convert.mockRejectedValueOnce(conversionError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow('Conversion failed');
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow('Conversion failed');
     });
 
     it('should handle file system errors during download', async () => {
@@ -381,7 +374,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'test-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -393,15 +386,15 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF.mockReturnValueOnce(mockConvertedPDF);
-      
+
       // Mock file system error during download
-      (require('fs/promises').readFile as jest.Mock).mockRejectedValueOnce(new Error('File not found'));
-      
-      await expect(downloadFileUseCase.execute('test-pdf-id'))
-        .rejects
-        .toThrow('File not found');
+      (require('fs/promises').readFile as jest.Mock).mockRejectedValueOnce(
+        new Error('File not found')
+      );
+
+      await expect(downloadFileUseCase.execute('test-pdf-id')).rejects.toThrow('File not found');
     });
   });
 
@@ -412,7 +405,7 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       const mockConvertedPDF: ConvertedPDF = {
         id: 'test-pdf-id',
         originalDocumentId: 'original-doc-id',
@@ -424,23 +417,23 @@ describe('Document to PDF Conversion Service Integration Tests', () => {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
         downloadCount: 0,
       };
-      
+
       mockStorage.getActivePDF
         .mockReturnValueOnce(mockConvertedPDF) // For first download
         .mockReturnValueOnce({ ...mockConvertedPDF, downloadCount: 1 }) // For second download
         .mockReturnValueOnce({ ...mockConvertedPDF, downloadCount: 2 }); // For third download
-      
+
       // Convert the file
       const conversionResult = await convertFileUseCase.execute(mockFile);
       expect(conversionResult.id).toBe('test-pdf-id');
-      
+
       // Download multiple times and check download count
       const firstDownload = await downloadFileUseCase.execute('test-pdf-id');
       expect(firstDownload.pdfRecord.downloadCount).toBe(1);
-      
+
       const secondDownload = await downloadFileUseCase.execute('test-pdf-id');
       expect(secondDownload.pdfRecord.downloadCount).toBe(2);
-      
+
       const thirdDownload = await downloadFileUseCase.execute('test-pdf-id');
       expect(thirdDownload.pdfRecord.downloadCount).toBe(3);
     });

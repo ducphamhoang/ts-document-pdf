@@ -50,12 +50,17 @@ const config: AppConfig = {
     baseUrl: process.env.BASE_URL || defaultConfig.server.baseUrl,
   },
   files: {
-    maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB || '', 10) || defaultConfig.files.maxFileSizeMB,
-    retentionHours: parseInt(process.env.FILE_RETENTION_HOURS || '', 10) || defaultConfig.files.retentionHours,
+    maxFileSizeMB:
+      parseInt(process.env.MAX_FILE_SIZE_MB || '', 10) || defaultConfig.files.maxFileSizeMB,
+    retentionHours:
+      parseInt(process.env.FILE_RETENTION_HOURS || '', 10) || defaultConfig.files.retentionHours,
   },
   conversion: {
-    timeoutMs: parseInt(process.env.CONVERSION_TIMEOUT_MS || '', 10) || defaultConfig.conversion.timeoutMs,
-    maxConcurrentConversions: parseInt(process.env.MAX_CONCURRENT_CONVERSIONS || '', 10) || defaultConfig.conversion.maxConcurrentConversions,
+    timeoutMs:
+      parseInt(process.env.CONVERSION_TIMEOUT_MS || '', 10) || defaultConfig.conversion.timeoutMs,
+    maxConcurrentConversions:
+      parseInt(process.env.MAX_CONCURRENT_CONVERSIONS || '', 10) ||
+      defaultConfig.conversion.maxConcurrentConversions,
   },
   logLevel: process.env.LOG_LEVEL || defaultConfig.logLevel,
 };

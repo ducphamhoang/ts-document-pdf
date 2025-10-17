@@ -8,6 +8,12 @@ import { errorMiddleware } from '../../src/presentation/middleware/error.middlew
 // Mock the Gemini SDK
 jest.mock('@google/genai');
 
+// Mock rate limiter to pass through all requests in tests
+jest.mock('../../src/presentation/middleware/rate-limit.middleware', () => ({
+  translationRateLimiter: (req: any, res: any, next: any) => next(),
+  generalApiRateLimiter: (req: any, res: any, next: any) => next(),
+}));
+
 describe('Translation API Integration Tests', () => {
   let app: Express;
   let mockGenAI: any;
@@ -17,6 +23,7 @@ describe('Translation API Integration Tests', () => {
     process.env.GEMINI_API_KEY = 'test-api-key';
     process.env.GEMINI_MODEL = 'gemini-2.0-flash-001';
     process.env.TRANSLATION_TIMEOUT_MS = '30000';
+    process.env.GEMINI_RATE_LIMIT_RPM = '10000'; // High limit for tests
 
     // Create mock Gemini client
     mockGenAI = {
@@ -53,6 +60,7 @@ describe('Translation API Integration Tests', () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_MODEL;
     delete process.env.TRANSLATION_TIMEOUT_MS;
+    delete process.env.GEMINI_RATE_LIMIT_RPM;
   });
 
   describe('POST /api/v1/translate', () => {
@@ -114,10 +122,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(200);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(200);
 
       // Assert
       expect(response.body.data[0].id).toBe('custom-id-123');
@@ -141,10 +146,7 @@ describe('Translation API Integration Tests', () => {
       const startTime = Date.now();
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(200);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(200);
 
       const duration = Date.now() - startTime;
 
@@ -161,7 +163,7 @@ describe('Translation API Integration Tests', () => {
         items: [
           {
             id: 'special-1',
-            text: 'Hello! How are you? I\'m fine, thanks.',
+            text: "Hello! How are you? I'm fine, thanks.",
             position: { page: 1, x: 0, y: 0 },
           },
           {
@@ -173,10 +175,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(200);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(200);
 
       // Assert
       expect(response.body.success).toBe(true);
@@ -228,10 +227,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(400);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(400);
 
       // Assert
       expect(response.body.success).toBe(false);
@@ -248,10 +244,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(400);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(400);
 
       // Assert
       expect(response.body.success).toBe(false);
@@ -274,10 +267,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(400);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(400);
 
       // Assert
       expect(response.body.success).toBe(false);
@@ -313,10 +303,7 @@ describe('Translation API Integration Tests', () => {
       };
 
       // Act
-      const response = await request(app)
-        .post('/api/v1/translate')
-        .send(requestBody)
-        .expect(413);
+      const response = await request(app).post('/api/v1/translate').send(requestBody).expect(413);
 
       // Assert
       expect(response.body.success).toBe(false);

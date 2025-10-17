@@ -31,28 +31,24 @@ describe('ConvertFileUseCase', () => {
     mockFileValidator = new (FileValidator as any)();
     mockStorage = new (TempFileStorageService as any)();
     mockConverter = new (LibreOfficeConverter as any)();
-    
-    convertFileUseCase = new ConvertFileUseCase(
-      mockFileValidator,
-      mockStorage,
-      mockConverter
-    );
+
+    convertFileUseCase = new ConvertFileUseCase(mockFileValidator, mockStorage, mockConverter);
   });
 
   describe('execute', () => {
     it('should successfully convert a valid file', async () => {
       // Mock file validation to pass
       mockFileValidator.validateFile.mockResolvedValueOnce(Promise.resolve());
-      
+
       // Mock storage to create temp directory
       mockStorage.createTempDirectory.mockResolvedValueOnce('/tmp/convert-12345');
-      
+
       // Mock converter to return a converted file path
       mockConverter.convert.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock storage to save PDF
       mockStorage.savePDF.mockResolvedValueOnce('/tmp/converted_test.pdf');
-      
+
       // Mock the internal activePDFs map to return a record
       mockStorage.getActivePDF.mockReturnValueOnce({
         id: 'mock-uuid',
@@ -83,9 +79,7 @@ describe('ConvertFileUseCase', () => {
       const validationError = new Error('Invalid file type');
       mockFileValidator.validateFile.mockRejectedValueOnce(validationError);
 
-      await expect(convertFileUseCase.execute(mockFile))
-        .rejects
-        .toThrow(validationError);
+      await expect(convertFileUseCase.execute(mockFile)).rejects.toThrow(validationError);
     });
   });
 });

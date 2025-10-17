@@ -12,11 +12,7 @@ export interface ITranslationService {
    * @returns Translated text
    * @throws TranslationError if translation fails
    */
-  translateText(
-    text: string,
-    sourceLanguage: string,
-    targetLanguage: string
-  ): Promise<string>;
+  translateText(text: string, sourceLanguage: string, targetLanguage: string): Promise<string>;
 
   /**
    * Count tokens in the given text

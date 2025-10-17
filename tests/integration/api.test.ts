@@ -8,9 +8,7 @@ describe('Document Conversion API Integration Tests', () => {
 
   describe('POST /api/v1/convert', () => {
     it('should return 400 when no file is uploaded', async () => {
-      const response = await request(app)
-        .post('/api/v1/convert')
-        .expect(400);
+      const response = await request(app).post('/api/v1/convert').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.type).toBe('MissingFileError');
@@ -20,7 +18,7 @@ describe('Document Conversion API Integration Tests', () => {
       // Create a temporary text file for testing
       const tempFilePath = '/tmp/test.txt';
       fs.writeFileSync(tempFilePath, 'This is a test text file');
-      
+
       const response = await request(app)
         .post('/api/v1/convert')
         .attach('file', tempFilePath)
@@ -39,9 +37,7 @@ describe('Document Conversion API Integration Tests', () => {
 
   describe('GET /downloads/:fileId', () => {
     it('should return 404 for non-existent file ID', async () => {
-      const response = await request(app)
-        .get('/api/v1/downloads/invalid-file-id')
-        .expect(404);
+      const response = await request(app).get('/api/v1/downloads/invalid-file-id').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();

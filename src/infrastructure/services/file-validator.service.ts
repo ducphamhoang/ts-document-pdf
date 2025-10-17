@@ -21,7 +21,7 @@ export class FileValidator implements IFileValidator {
     // Validate MIME type by checking the file signature
     // Since we're using disk storage, we need to read first few bytes from the file path
     let fileBuffer: Buffer;
-    
+
     // If buffer exists (in some Multer configurations), use it directly
     if (file.buffer) {
       fileBuffer = file.buffer;
@@ -33,15 +33,17 @@ export class FileValidator implements IFileValidator {
     }
 
     const detectedType = await fileTypeFromBuffer(fileBuffer);
-    
+
     if (!detectedType) {
-      throw new InvalidFileSignatureError('Could not detect file type from signature. The file may be corrupted or in an unsupported format.');
+      throw new InvalidFileSignatureError(
+        'Could not detect file type from signature. The file may be corrupted or in an unsupported format.'
+      );
     }
 
     // List of supported MIME types for office documents
     const supportedMimeTypes = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // XLSX
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
       'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
       'application/msword', // DOC
       'application/vnd.ms-excel', // XLS
@@ -50,26 +52,30 @@ export class FileValidator implements IFileValidator {
 
     if (!supportedMimeTypes.includes(detectedType.mime)) {
       const supportedTypesList = [
-        'DOCX (.docx)', 'XLSX (.xlsx)', 'PPTX (.pptx)', 
-        'DOC (.doc)', 'XLS (.xls)', 'PPT (.ppt)'
+        'DOCX (.docx)',
+        'XLSX (.xlsx)',
+        'PPTX (.pptx)',
+        'DOC (.doc)',
+        'XLS (.xls)',
+        'PPT (.ppt)',
       ].join(', ');
-      
+
       throw new UnsupportedFileTypeError(
         `Unsupported file type: ${detectedType.mime}. File signature analysis detected type "${detectedType.mime}". ` +
-        `Supported types are: ${supportedTypesList}`
+          `Supported types are: ${supportedTypesList}`
       );
     }
 
     // Additionally check file extension as a secondary validation
     const allowedExtensions = ['.docx', '.xlsx', '.pptx', '.doc', '.xls', '.ppt'];
     const fileExtension = '.' + file.originalname.split('.').pop()?.toLowerCase();
-    
+
     if (!allowedExtensions.includes(fileExtension)) {
       const supportedExtensions = allowedExtensions.join(', ');
-      
+
       throw new UnsupportedFileTypeError(
         `Unsupported file extension: ${fileExtension}. ` +
-        `File extension does not match the allowed types: ${supportedExtensions}`
+          `File extension does not match the allowed types: ${supportedExtensions}`
       );
     }
   }

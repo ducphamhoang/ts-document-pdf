@@ -27,15 +27,16 @@ export class ConversionQueueService implements IConversionQueueService {
     this.maxConcurrentConversions = config.conversion.maxConcurrentConversions || 5;
     // Start processing queue automatically
     this.processQueue();
-    
+
     // Log queue metrics periodically for monitoring
     setInterval(() => {
-      if (this.queue.length > 0 || this.activeCount > 0) { // Only log if there's activity
+      if (this.queue.length > 0 || this.activeCount > 0) {
+        // Only log if there's activity
         logger.info('Queue metrics', {
           queueLength: this.queue.length,
           activeConversions: this.activeCount,
           maxConcurrent: this.maxConcurrentConversions,
-          utilization: `${Math.round((this.activeCount / this.maxConcurrentConversions) * 100)}%`
+          utilization: `${Math.round((this.activeCount / this.maxConcurrentConversions) * 100)}%`,
         });
       }
     }, 30000); // Log every 30 seconds if there's activity
@@ -47,9 +48,9 @@ export class ConversionQueueService implements IConversionQueueService {
       this.activeCount++;
       logger.debug('Executing conversion task immediately', {
         activeConversions: this.activeCount,
-        maxConcurrent: this.maxConcurrentConversions
+        maxConcurrent: this.maxConcurrentConversions,
       });
-      
+
       try {
         const result = await task();
         this.activeCount--;
@@ -70,16 +71,16 @@ export class ConversionQueueService implements IConversionQueueService {
           task,
           resolve: resolve as (value: any) => void,
           reject,
-          queuedAt: new Date()
+          queuedAt: new Date(),
         };
         this.queue.push(queuedTask as QueuedTask);
-        
+
         logger.info('Conversion task queued', {
           taskId: queuedTask.id,
           queueLength: this.queue.length,
           activeConversions: this.activeCount,
           maxConcurrent: this.maxConcurrentConversions,
-          waitTimeMs: Date.now() - queuedTask.queuedAt.getTime()
+          waitTimeMs: Date.now() - queuedTask.queuedAt.getTime(),
         });
       });
     }
@@ -92,29 +93,30 @@ export class ConversionQueueService implements IConversionQueueService {
       if (!nextTask) break;
 
       this.activeCount++;
-      
+
       logger.info('Processing queued task', {
         taskId: nextTask.id,
         queueLength: this.queue.length,
         activeConversions: this.activeCount,
-        maxConcurrent: this.maxConcurrentConversions
+        maxConcurrent: this.maxConcurrentConversions,
       });
 
       // Execute the queued task
       const startTime = Date.now();
-      nextTask.task()
+      nextTask
+        .task()
         .then(result => {
           const duration = Date.now() - startTime;
           this.activeCount--;
           nextTask.resolve(result);
-          
+
           logger.info('Queued task completed', {
             taskId: nextTask.id,
             durationMs: duration,
             activeConversions: this.activeCount,
-            queueLength: this.queue.length
+            queueLength: this.queue.length,
           });
-          
+
           // Process next item in queue if available
           setImmediate(() => this.processQueue());
         })
@@ -122,15 +124,15 @@ export class ConversionQueueService implements IConversionQueueService {
           const duration = Date.now() - startTime;
           this.activeCount--;
           nextTask.reject(error);
-          
+
           logger.error('Queued task failed', {
             taskId: nextTask.id,
             durationMs: duration,
             activeConversions: this.activeCount,
             queueLength: this.queue.length,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
-          
+
           // Process next item in queue if available
           setImmediate(() => this.processQueue());
         });
@@ -149,7 +151,7 @@ export class ConversionQueueService implements IConversionQueueService {
     return {
       queueLength: this.getCurrentQueueLength(),
       activeConversions: this.getActiveConversionCount(),
-      maxConcurrent: this.maxConcurrentConversions
+      maxConcurrent: this.maxConcurrentConversions,
     };
   }
 }

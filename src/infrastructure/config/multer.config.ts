@@ -11,10 +11,10 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     // Create a unique filename with timestamp and original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
+  },
 });
 
 // File filter to only allow specific file types
@@ -22,7 +22,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   // List of allowed file extensions
   const allowedExtensions = ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
   const fileExtension = path.extname(file.originalname).toLowerCase();
-  
+
   if (allowedExtensions.includes(fileExtension)) {
     cb(null, true); // Accept the file
   } else {
@@ -35,15 +35,15 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 };
 
 // Create multer instance with configuration
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: config.files.maxFileSizeMB * 1024 * 1024, // Convert MB to bytes
     // Also set parts and fields limits to prevent abuse
-    fields: 1,  // Only allow 1 field (the file field)
-    files: 1,   // Only allow 1 file
+    fields: 1, // Only allow 1 field (the file field)
+    files: 1, // Only allow 1 file
   },
-  fileFilter: fileFilter
+  fileFilter: fileFilter,
 });
 
 export default upload;

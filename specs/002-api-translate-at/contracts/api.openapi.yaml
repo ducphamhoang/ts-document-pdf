@@ -147,6 +147,39 @@ paths:
                       details:
                         actualTokens: 12500
                         maxTokens: 10000
+        '429':
+          description: Too many requests - rate limit exceeded
+          headers:
+            RateLimit-Limit:
+              description: Total requests allowed per time window
+              schema:
+                type: integer
+                example: 60
+            RateLimit-Remaining:
+              description: Requests remaining in current window
+              schema:
+                type: integer
+                example: 0
+            RateLimit-Reset:
+              description: Time when rate limit resets (Unix timestamp)
+              schema:
+                type: integer
+                example: 1678901234
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimitExceeded:
+                  summary: Rate limit exceeded
+                  value:
+                    success: false
+                    message: Too many translation requests from this IP, please try again later.
+                    error:
+                      code: RATE_LIMIT_EXCEEDED
+                      details:
+                        retryAfter: "1 minute"
+                        limit: 60
         '422':
           description: Unprocessable entity - translation failed
           content:
@@ -334,6 +367,7 @@ components:
             - TRANSLATION_SERVICE_UNAVAILABLE
             - TIMEOUT
             - INVALID_REQUEST
+            - RATE_LIMIT_EXCEEDED
           example: INVALID_LANGUAGE
         details:
           type: object

@@ -1,4 +1,15 @@
-import { IsString, IsNotEmpty, IsArray, ArrayMinSize, ValidateNested, IsNumber, Min, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
+  IsNumber,
+  Min,
+  Matches,
+  MaxLength,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -7,14 +18,17 @@ import { Type } from 'class-transformer';
 export class PositionDto {
   @IsNumber()
   @Min(1, { message: 'Page number must be at least 1' })
+  @Max(10000, { message: 'Page number must not exceed 10000' })
   page!: number;
 
   @IsNumber()
   @Min(0, { message: 'X coordinate must be non-negative' })
+  @Max(100000, { message: 'X coordinate must not exceed 100000' })
   x!: number;
 
   @IsNumber()
   @Min(0, { message: 'Y coordinate must be non-negative' })
+  @Max(100000, { message: 'Y coordinate must not exceed 100000' })
   y!: number;
 }
 
@@ -24,10 +38,12 @@ export class PositionDto {
 export class RequestItemDto {
   @IsString()
   @IsNotEmpty({ message: 'Item ID cannot be empty' })
+  @MaxLength(500, { message: 'Item ID must not exceed 500 characters' })
   id!: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Text cannot be empty' })
+  @MaxLength(50000, { message: 'Text must not exceed 50000 characters per item' })
   text!: string;
 
   @ValidateNested()
