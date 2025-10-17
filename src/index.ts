@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import app from './server';
 import config from './infrastructure/config';
 import logger from './infrastructure/logger/winston.logger';

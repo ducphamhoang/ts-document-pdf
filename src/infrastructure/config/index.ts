@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from .env file in config directory
+dotenv.config({ path: path.resolve(__dirname, '../../../config/.env') });
 
 interface FileConfig {
   maxFileSizeMB: number;
